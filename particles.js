@@ -5,7 +5,6 @@ let particlesArray = [];
 function initCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-
   particlesArray = [];
   for (let i = 0; i < 40; i++) {
     particlesArray.push({
@@ -34,5 +33,4 @@ function animateParticles() {
   requestAnimationFrame(animateParticles);
 }
 animateParticles();
-
 window.addEventListener('resize', initCanvas);
