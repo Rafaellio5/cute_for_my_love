@@ -1,11 +1,11 @@
 const puzzleContainer = document.getElementById('puzzle-container');
-const nextBtn = document.getElementById('next-btn');
 
 const size = puzzleContainer.offsetWidth;
 const grid = 3;
 const pieceSize = size / grid;
 
 let pieces = [];
+let placedCount = 0;
 
 for (let i = 0; i < grid * grid; i++) {
   const piece = document.createElement('div');
@@ -19,6 +19,8 @@ for (let i = 0; i < grid * grid; i++) {
   piece.style.backgroundPosition = `-${(i % grid) * pieceSize}px -${Math.floor(i / grid) * pieceSize}px`;
   piece.setAttribute('data-id', i);
   piece.setAttribute('data-placed', 'false');
+  piece.style.position = 'absolute';
+  piece.style.zIndex = 1;
 
   let offsetX, offsetY;
 
@@ -28,6 +30,8 @@ for (let i = 0; i < grid * grid; i++) {
   function dragStart(e) {
     if (piece.getAttribute('data-placed') === 'true') return;
     e.preventDefault();
+    piece.style.zIndex = 1000;
+
     const rect = piece.getBoundingClientRect();
     offsetX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
     offsetY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
@@ -62,10 +66,16 @@ for (let i = 0; i < grid * grid; i++) {
       piece.style.left = correctX + 'px';
       piece.style.top = correctY + 'px';
       piece.setAttribute('data-placed', 'true');
-    }
+      piece.style.zIndex = 0;
+      placedCount++;
 
-    if (pieces.every(p => p.getAttribute('data-placed') === 'true')) {
-      nextBtn.disabled = false;
+      if (placedCount === pieces.length) {
+        setTimeout(() => {
+          window.location.href = 'infinity.html';
+        }, 500);
+      }
+    } else {
+      piece.style.zIndex = 1;
     }
   }
 
