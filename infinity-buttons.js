@@ -1,3 +1,30 @@
+<div id="infinity-container" style="position: relative; width: 600px; height: 400px; background: #222; border-radius: 12px; overflow: hidden;">
+  <div id="message" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; display: none;"></div>
+</div>
+
+<style>
+  .inf-btn {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background-color: #ff4444;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .inf-btn.disabled {
+    background-color: #888;
+    cursor: default;
+  }
+</style>
+
+<script>
 const container = document.getElementById('infinity-container');
 const message = document.getElementById('message');
 
@@ -15,17 +42,18 @@ ctx.lineWidth = 3;
 const N = 12; // количество кнопок
 const buttons = [];
 const coords = [];
-const a = 120; // масштаб
+const a = 120; // масштаб Лемнискаты
 
-// центр контейнера
 const centerX = container.offsetWidth / 2;
 const centerY = container.offsetHeight / 2;
 
+// координаты по Лемнискате Бернулли
 for (let i = 0; i < N; i++) {
   const t = (i / N) * 2 * Math.PI;
-  const x = a * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
-  const y = a * Math.sin(t) * Math.cos(t) / (1 + Math.sin(t) * Math.sin(t));
-  coords.push({x: centerX + x - 20, y: centerY + y - 20}); // -20 чтобы центр кнопки совпадал
+  const denom = 1 + Math.sin(t) * Math.sin(t);
+  const x = a * Math.cos(t) / denom;
+  const y = a * Math.sin(t) * Math.cos(t) / denom;
+  coords.push({x: centerX + x - 20, y: centerY + y - 20}); // центр кнопки
 }
 
 let currentStep = 0;
@@ -36,7 +64,7 @@ coords.forEach((pos, index) => {
   btn.style.left = pos.x + 'px';
   btn.style.top = pos.y + 'px';
   btn.textContent = index + 1;
-  if (index !== 0) btn.classList.add('disabled'); // только кнопка 1 активна
+  if (index !== 0) btn.classList.add('disabled'); // только первая активна
 
   btn.addEventListener('click', () => {
     if (index !== currentStep) return;
@@ -52,7 +80,7 @@ coords.forEach((pos, index) => {
       setTimeout(() => {
         message.textContent = "Здесь появится ваш текст ❤️";
         message.style.display = 'block';
-      }, 2000);
+      }, 500);
     }
   });
 
@@ -78,3 +106,4 @@ function drawFullInfinity() {
   }
   ctx.stroke();
 }
+</script>
