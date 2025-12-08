@@ -6,10 +6,10 @@ let drawing = false;
 let points = [];
 
 canvas.addEventListener('mousedown', startDraw);
-canvas.addEventListener('touchstart', startDraw);
+canvas.addEventListener('touchstart', startDraw, {passive:false});
 
 canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('touchmove', draw);
+canvas.addEventListener('touchmove', draw, {passive:false});
 
 canvas.addEventListener('mouseup', endDraw);
 canvas.addEventListener('mouseleave', endDraw);
@@ -21,7 +21,6 @@ function startDraw(e) {
   points = [];
   const pos = getPos(e);
   points.push(pos);
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.beginPath();
   ctx.moveTo(pos.x, pos.y);
 }
@@ -42,8 +41,6 @@ function draw(e) {
 function endDraw() {
   if (!drawing) return;
   drawing = false;
-
-  // простая проверка: если нарисовали достаточно точек — считаем за знак бесконечности
   if (points.length > 50) {
     message.style.display = 'block';
   }
@@ -52,14 +49,8 @@ function endDraw() {
 function getPos(e) {
   const rect = canvas.getBoundingClientRect();
   if (e.touches) {
-    return {
-      x: e.touches[0].clientX - rect.left,
-      y: e.touches[0].clientY - rect.top
-    };
+    return { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
   } else {
-    return {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top
-    };
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
 }
