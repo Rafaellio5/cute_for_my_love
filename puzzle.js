@@ -69,10 +69,13 @@ for (let i = 0; i < grid * grid; i++) {
       piece.style.zIndex = 0;
       placedCount++;
 
+      // поднимаем все остальные кусочки, которые ещё не поставлены
+      pieces.forEach(p => {
+        if (p.getAttribute('data-placed') === 'false') p.style.zIndex = 1;
+      });
+
       if (placedCount === pieces.length) {
-        setTimeout(() => {
-          window.location.href = 'infinity.html';
-        }, 500);
+        setTimeout(() => { window.location.href = 'infinity.html'; }, 500);
       }
     } else {
       piece.style.zIndex = 1;
