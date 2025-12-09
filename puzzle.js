@@ -2,10 +2,11 @@ const container = document.getElementById('puzzle-container');
 const rows = 3;
 const cols = 3;
 const pieceSize = 200 / 3; // размер части пазла
+const snapTolerance = 15; // допустимое расстояние для привязки
 
 let pieces = [];
 
-// создаём части пазла
+// создание частей пазла
 for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
         const piece = document.createElement('div');
@@ -14,9 +15,8 @@ for (let r = 0; r < rows; r++) {
         piece.style.width = pieceSize + 'px';
         piece.style.height = pieceSize + 'px';
         piece.style.backgroundPosition = `-${c * pieceSize}px -${r * pieceSize}px`;
-        piece.style.transition = 'transform 0.2s ease'; // плавное прибивание
+        piece.style.transition = 'transform 0.2s ease';
 
-        // случайное начальное положение
         piece.style.transform = `translate(${Math.random() * 120}px, ${Math.random() * 120}px)`;
 
         piece.dataset.row = r;
@@ -25,89 +25,93 @@ for (let r = 0; r < rows; r++) {
         container.appendChild(piece);
         pieces.push(piece);
 
-        // события мыши
-        piece.addEventListener('mousedown', dragStart);
-        piece.addEventListener('mousemove', dragMove);
-        piece.addEventListener('mouseup', dragEnd);
-
-        // события тач
-        piece.addEventListener('touchstart', dragStart, { passive: false });
-        piece.addEventListener('touchmove', dragMove, { passive: false });
-        piece.addEventListener('touchend', dragEnd);
+        // pointer events для ПК и мобильных устройств
+        piece.addEventListener('pointerdown', pointerDown);
     }
 }
 
 let draggedPiece = null;
-let startX = 0;
-let startY = 0;
-let origX = 0;
-let origY = 0;
+let pointerOffsetX = 0;
+let pointerOffsetY = 0;
 
-function dragStart(e) {
+// -------------------------
+// Pointer Handlers
+// -------------------------
+function pointerDown(e) {
     e.preventDefault();
-    draggedPiece = e.target;
+    draggedPiece = e.currentTarget;
 
-    let clientX = e.clientX;
-    let clientY = e.clientY;
-    if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    }
-
+    // захватываем координаты указателя относительно кусочка
+    const rect = draggedPiece.getBoundingClientRect();
     const transform = draggedPiece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    origX = parseFloat(transform[1]);
-    origY = parseFloat(transform[2]);
+    const currentX = parseFloat(transform[1]);
+    const currentY = parseFloat(transform[2]);
 
-    startX = clientX;
-    startY = clientY;
+    pointerOffsetX = e.clientX - rect.left;
+    pointerOffsetY = e.clientY - rect.top;
 
-    draggedPiece.style.transition = 'none'; // отключаем transition при движении
+    draggedPiece.dataset.startX = currentX;
+    draggedPiece.dataset.startY = currentY;
+
+    draggedPiece.setPointerCapture(e.pointerId);
+    draggedPiece.style.transition = 'none';
+
+    draggedPiece.addEventListener('pointermove', pointerMove);
+    draggedPiece.addEventListener('pointerup', pointerUp);
 }
 
-function dragMove(e) {
+function pointerMove(e) {
     if (!draggedPiece) return;
     e.preventDefault();
 
-    let clientX = e.clientX;
-    let clientY = e.clientY;
-    if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    }
+    const startX = parseFloat(draggedPiece.dataset.startX);
+    const startY = parseFloat(draggedPiece.dataset.startY);
 
-    const deltaX = clientX - startX;
-    const deltaY = clientY - startY;
+    const rect = container.getBoundingClientRect();
+    let newX = startX + (e.clientX - rect.left - pointerOffsetX);
+    let newY = startY + (e.clientY - rect.top - pointerOffsetY);
 
-    draggedPiece.style.transform = `translate(${origX + deltaX}px, ${origY + deltaY}px)`;
+    // ограничиваем движение по контейнеру
+    newX = Math.max(0, Math.min(newX, rect.width - pieceSize));
+    newY = Math.max(0, Math.min(newY, rect.height - pieceSize));
+
+    draggedPiece.style.transform = `translate(${newX}px, ${newY}px)`;
 }
 
-function dragEnd(e) {
+function pointerUp(e) {
     if (!draggedPiece) return;
 
-    const style = draggedPiece.style.transform;
-    const match = style.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    const x = parseFloat(match[1]);
-    const y = parseFloat(match[2]);
+    // вычисляем центр кусочка
+    const transform = draggedPiece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    const x = parseFloat(transform[1]);
+    const y = parseFloat(transform[2]);
 
-    const row = Math.round(y / pieceSize);
-    const col = Math.round(x / pieceSize);
+    const targetX = draggedPiece.dataset.col * pieceSize;
+    const targetY = draggedPiece.dataset.row * pieceSize;
 
-    if (row == draggedPiece.dataset.row && col == draggedPiece.dataset.col) {
-        // фиксируем на месте с анимацией
-        draggedPiece.style.transition = 'transform 0.3s ease, scale 0.3s ease';
-        draggedPiece.style.transform = `translate(${col * pieceSize}px, ${row * pieceSize}px) scale(1.05)`;
-        setTimeout(() => draggedPiece.style.transform = `translate(${col * pieceSize}px, ${row * pieceSize}px) scale(1)`, 200);
-        draggedPiece.style.pointerEvents = 'none';
-        checkCompletion();
-    } else {
-        // возвращаем в случайное место
+    // проверяем расстояние для «магнита»
+    if (Math.abs(x - targetX) <= snapTolerance && Math.abs(y - targetY) <= snapTolerance) {
+        // плавное прибивание на место
         draggedPiece.style.transition = 'transform 0.3s ease';
-        draggedPiece.style.transform = `translate(${Math.random() * 120}px, ${Math.random() * 120}px)`;
+        draggedPiece.style.transform = `translate(${targetX}px, ${targetY}px) scale(1.05)`;
+        setTimeout(() => {
+            draggedPiece.style.transform = `translate(${targetX}px, ${targetY}px) scale(1)`;
+        }, 150);
+
+        draggedPiece.style.pointerEvents = 'none';
     }
 
+    draggedPiece.removeEventListener('pointermove', pointerMove);
+    draggedPiece.removeEventListener('pointerup', pointerUp);
+    draggedPiece.releasePointerCapture(e.pointerId);
     draggedPiece = null;
+
+    checkCompletion();
 }
 
+// -------------------------
+// Проверка завершения пазла
+// -------------------------
 function checkCompletion() {
     if (pieces.every(p => p.style.pointerEvents === 'none')) {
         setTimeout(() => {
@@ -116,9 +120,9 @@ function checkCompletion() {
     }
 }
 
-/* ===========================
-   Летающие сердечки
-   =========================== */
+// -------------------------
+// Летающие сердечки
+// -------------------------
 function spawnHearts() {
     const container = document.getElementById('hearts');
     setInterval(() => {
