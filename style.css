@@ -1,17 +1,68 @@
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    background: #f0f0f0;
+    font-family: "Arial", sans-serif;
+    background: #fff7f8;
+    color: #333;
 }
 
-#puzzle-container {
-    width: 100vw;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+.center {
+    text-align: center;
+    margin-top: 40px;
+}
+
+button {
+    padding: 12px 28px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #ff7ea8;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #ff548c;
 }
 
 canvas {
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+    border: 2px solid #ff7ea8;
+    border-radius: 10px;
+    margin-top: 20px;
+    max-width: 95%;
+}
+
+/* --- романтическая финальная страница --- */
+
+.romantic-container {
+    text-align: center;
+    margin-top: 40px;
+    animation: fadeIn 2s ease;
+}
+
+.romantic-text {
+    font-size: 36px;
+    color: #ff4c85;
+    animation: float 3s ease-in-out infinite;
+}
+
+.romantic-sub {
+    font-size: 22px;
+    margin-top: 20px;
+    line-height: 1.5;
+    color: #555;
+    animation: fadeIn 3s ease;
+}
+
+/* мягкое появление */
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+/* романтичное “покачивание” текста */
+@keyframes float {
+    0% {transform: translateY(0px);}
+    50% {transform: translateY(-8px);}
+    100% {transform: translateY(0px);}
 }
