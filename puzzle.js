@@ -1,24 +1,20 @@
 const container = document.getElementById('puzzle-container');
 const rows = 3;
 const cols = 3;
-const pieceSize = 66.66; // 200 / 3 = 66.666... пикселей
+const pieceSize = 200 / 3;
 
 let pieces = [];
 
-// создаем части пазла
+// создание частей пазла
 for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
         const piece = document.createElement('div');
         piece.classList.add('puzzle-piece');
-        
+
         piece.style.width = pieceSize + 'px';
         piece.style.height = pieceSize + 'px';
-
-        piece.style.backgroundImage = "url('heart.jpg')";
-        piece.style.backgroundSize = "200px 200px";
         piece.style.backgroundPosition = `-${c * pieceSize}px -${r * pieceSize}px`;
 
-        // случайно разбрасываем
         piece.style.left = Math.random() * 120 + 'px';
         piece.style.top = Math.random() * 120 + 'px';
 
@@ -28,12 +24,10 @@ for (let r = 0; r < rows; r++) {
         container.appendChild(piece);
         pieces.push(piece);
 
-        // мышь
         piece.addEventListener('mousedown', dragStart);
         piece.addEventListener('mousemove', dragMove);
         piece.addEventListener('mouseup', dragEnd);
 
-        // тач
         piece.addEventListener('touchstart', dragStart, { passive: false });
         piece.addEventListener('touchmove', dragMove, { passive: false });
         piece.addEventListener('touchend', dragEnd);
@@ -74,7 +68,6 @@ function dragMove(e) {
     let x = clientX - rect.left - offsetX;
     let y = clientY - rect.top - offsetY;
 
-    // ограничиваем движение
     x = Math.max(0, Math.min(x, rect.width - pieceSize));
     y = Math.max(0, Math.min(y, rect.height - pieceSize));
 
@@ -92,13 +85,11 @@ function dragEnd(e) {
     const col = Math.round(x / pieceSize);
 
     if (row == draggedPiece.dataset.row && col == draggedPiece.dataset.col) {
-        // фиксируем на месте
         draggedPiece.style.left = col * pieceSize + 'px';
         draggedPiece.style.top = row * pieceSize + 'px';
         draggedPiece.style.pointerEvents = 'none';
         checkCompletion();
     } else {
-        // возвращаем в случайное место
         draggedPiece.style.left = Math.random() * 120 + 'px';
         draggedPiece.style.top = Math.random() * 120 + 'px';
     }
@@ -108,8 +99,26 @@ function dragEnd(e) {
 
 function checkCompletion() {
     if (pieces.every(p => p.style.pointerEvents === 'none')) {
-        setTimeout(() => {
-            window.location.href = 'message.html';
-        }, 500);
+        setTimeout(() => window.location.href = "message.html", 500);
     }
 }
+
+/* ===========================
+   ЛЕТАЮЩИЕ СЕРДЕЧКИ
+   =========================== */
+function spawnHearts() {
+    const container = document.getElementById('hearts');
+    setInterval(() => {
+        const heart = document.createElement('div');
+        heart.classList.add('heart');
+        heart.textContent = '❤';
+
+        heart.style.left = Math.random() * 100 + '%';
+        heart.style.fontSize = (15 + Math.random() * 25) + 'px';
+        heart.style.animationDuration = (4 + Math.random() * 4) + 's';
+
+        container.appendChild(heart);
+        setTimeout(() => heart.remove(), 7000);
+    }, 600);
+}
+spawnHearts();
