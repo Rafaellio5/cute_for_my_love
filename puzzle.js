@@ -7,6 +7,7 @@ canvas.height = 600;
 const rows = 3;
 const cols = 3;
 const pieceSize = canvas.width / cols;
+const snapTolerance = 20;
 
 let pieces = [];
 let selectedPiece = null;
@@ -19,7 +20,6 @@ img.onload = () => {
     drawPuzzle();
 };
 
-// Инициализация пазла
 function initPuzzle() {
     pieces = [];
     for (let y = 0; y < rows; y++) {
@@ -29,7 +29,6 @@ function initPuzzle() {
                 correctY: y * pieceSize,
                 x: Math.random() * (canvas.width - pieceSize),
                 y: Math.random() * (canvas.height - pieceSize),
-                index: pieces.length,
                 locked: false,
                 z: 0
             });
@@ -37,11 +36,9 @@ function initPuzzle() {
     }
 }
 
-// Рисуем пазл
 function drawPuzzle() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // сортируем по z (слой)
     pieces.sort((a, b) => a.z - b.z);
 
     pieces.forEach(p => {
@@ -59,9 +56,7 @@ function drawPuzzle() {
     requestAnimationFrame(drawPuzzle);
 }
 
-// -------------------------
-// Pointer Events (ПК + мобильные)
-// -------------------------
+// Pointer events для ПК и мобильных
 canvas.addEventListener("pointerdown", e => {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -97,7 +92,6 @@ canvas.addEventListener("pointermove", e => {
     selectedPiece.x = mx - selectedPiece.offsetX;
     selectedPiece.y = my - selectedPiece.offsetY;
 
-    // ограничение движения
     selectedPiece.x = Math.max(0, Math.min(selectedPiece.x, canvas.width - pieceSize));
     selectedPiece.y = Math.max(0, Math.min(selectedPiece.y, canvas.height - pieceSize));
 });
@@ -105,32 +99,30 @@ canvas.addEventListener("pointermove", e => {
 canvas.addEventListener("pointerup", e => {
     if (!selectedPiece) return;
 
-    // проверка магнитного притяжения
     if (
-        Math.abs(selectedPiece.x - selectedPiece.correctX) < 20 &&
-        Math.abs(selectedPiece.y - selectedPiece.correctY) < 20
+        Math.abs(selectedPiece.x - selectedPiece.correctX) < snapTolerance &&
+        Math.abs(selectedPiece.y - selectedPiece.correctY) < snapTolerance
     ) {
         selectedPiece.x = selectedPiece.correctX;
         selectedPiece.y = selectedPiece.correctY;
         selectedPiece.locked = true;
-        selectedPiece.z = -1; // фиксированные уходят вниз
+        selectedPiece.z = -1;
     }
 
     selectedPiece = null;
     checkComplete();
 });
 
-// Проверка завершения пазла
 function checkComplete() {
     if (pieces.every(p => p.locked)) {
         setTimeout(() => {
-            window.location.href = "message.html"; // переход на романтическую страницу
+            window.location.href = "message.html";
         }, 500);
     }
 }
 
 // -------------------------
-// Летающие сердечки (анимация)
+// Летающие сердечки
 function spawnHearts() {
     const container = document.getElementById('hearts');
     if (!container) return;
