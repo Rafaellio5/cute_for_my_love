@@ -11,16 +11,14 @@ h1 {
 }
 
 #puzzle-container {
-    display: inline-block;
-    position: relative;
     width: 200px;
     height: 200px;
-    margin-top: 20px;
+    margin: 0 auto;
+    position: relative;
 }
 
+
 .puzzle-piece {
-    width: 50px;  /* размер части */
-    height: 50px;
     position: absolute;
     cursor: grab;
     border: 1px solid #fff;
@@ -28,6 +26,7 @@ h1 {
     background-image: url('heart.jpg');
     background-size: 200px 200px;
 }
+
 
 #message-container {
     display: flex;
