@@ -1,7 +1,8 @@
 const container = document.getElementById('puzzle-container');
-const rows = 4;
-const cols = 4;
-const pieceSize = 50;
+const rows = 3;
+const cols = 3;
+const pieceSize = 66.66; // 200 / 3 = 66.666... пикселей
+
 let pieces = [];
 
 // создаем части пазла
@@ -9,24 +10,33 @@ for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
         const piece = document.createElement('div');
         piece.classList.add('puzzle-piece');
+        
+        piece.style.width = pieceSize + 'px';
+        piece.style.height = pieceSize + 'px';
+
+        piece.style.backgroundImage = "url('heart.jpg')";
+        piece.style.backgroundSize = "200px 200px";
         piece.style.backgroundPosition = `-${c * pieceSize}px -${r * pieceSize}px`;
-        piece.style.left = Math.random() * 150 + 'px';
-        piece.style.top = Math.random() * 150 + 'px';
+
+        // случайно разбрасываем
+        piece.style.left = Math.random() * 120 + 'px';
+        piece.style.top = Math.random() * 120 + 'px';
+
         piece.dataset.row = r;
         piece.dataset.col = c;
 
         container.appendChild(piece);
         pieces.push(piece);
 
-        // события для мыши
+        // мышь
         piece.addEventListener('mousedown', dragStart);
-        piece.addEventListener('mouseup', dragEnd);
         piece.addEventListener('mousemove', dragMove);
+        piece.addEventListener('mouseup', dragEnd);
 
-        // события для тача (мобильные устройства)
-        piece.addEventListener('touchstart', dragStart, {passive:false});
+        // тач
+        piece.addEventListener('touchstart', dragStart, { passive: false });
+        piece.addEventListener('touchmove', dragMove, { passive: false });
         piece.addEventListener('touchend', dragEnd);
-        piece.addEventListener('touchmove', dragMove, {passive:false});
     }
 }
 
@@ -37,6 +47,7 @@ let offsetY = 0;
 function dragStart(e) {
     e.preventDefault();
     draggedPiece = e.target;
+
     const rect = draggedPiece.getBoundingClientRect();
     let clientX = e.clientX, clientY = e.clientY;
 
@@ -63,7 +74,7 @@ function dragMove(e) {
     let x = clientX - rect.left - offsetX;
     let y = clientY - rect.top - offsetY;
 
-    // ограничиваем движение внутри контейнера
+    // ограничиваем движение
     x = Math.max(0, Math.min(x, rect.width - pieceSize));
     y = Math.max(0, Math.min(y, rect.height - pieceSize));
 
@@ -74,28 +85,31 @@ function dragMove(e) {
 function dragEnd(e) {
     if (!draggedPiece) return;
 
-    const rect = container.getBoundingClientRect();
-    const x = parseInt(draggedPiece.style.left);
-    const y = parseInt(draggedPiece.style.top);
+    const x = parseFloat(draggedPiece.style.left);
+    const y = parseFloat(draggedPiece.style.top);
 
     const row = Math.round(y / pieceSize);
     const col = Math.round(x / pieceSize);
 
     if (row == draggedPiece.dataset.row && col == draggedPiece.dataset.col) {
+        // фиксируем на месте
         draggedPiece.style.left = col * pieceSize + 'px';
         draggedPiece.style.top = row * pieceSize + 'px';
-        draggedPiece.style.pointerEvents = 'none'; // фиксируем
+        draggedPiece.style.pointerEvents = 'none';
         checkCompletion();
     } else {
-        draggedPiece.style.left = Math.random() * 150 + 'px';
-        draggedPiece.style.top = Math.random() * 150 + 'px';
+        // возвращаем в случайное место
+        draggedPiece.style.left = Math.random() * 120 + 'px';
+        draggedPiece.style.top = Math.random() * 120 + 'px';
     }
 
     draggedPiece = null;
 }
 
 function checkCompletion() {
-    if (pieces.every(p => p.style.pointerEvents == 'none')) {
-        setTimeout(() => window.location.href = 'message.html', 500);
+    if (pieces.every(p => p.style.pointerEvents === 'none')) {
+        setTimeout(() => {
+            window.location.href = 'message.html';
+        }, 500);
     }
 }
