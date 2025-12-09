@@ -15,83 +15,40 @@ for (let r = 0; r < rows; r++) {
         piece.dataset.row = r;
         piece.dataset.col = c;
 
+        piece.draggable = true;
+        piece.addEventListener('dragstart', dragStart);
+        piece.addEventListener('dragend', dragEnd);
+
         container.appendChild(piece);
         pieces.push(piece);
-
-        // события для мыши
-        piece.addEventListener('mousedown', dragStart);
-        piece.addEventListener('mouseup', dragEnd);
-        piece.addEventListener('mousemove', dragMove);
-
-        // события для тача (мобильные устройства)
-        piece.addEventListener('touchstart', dragStart, {passive:false});
-        piece.addEventListener('touchend', dragEnd);
-        piece.addEventListener('touchmove', dragMove, {passive:false});
     }
 }
 
 let draggedPiece = null;
-let offsetX = 0;
-let offsetY = 0;
 
 function dragStart(e) {
-    e.preventDefault();
     draggedPiece = e.target;
-    const rect = draggedPiece.getBoundingClientRect();
-    let clientX = e.clientX, clientY = e.clientY;
-
-    if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    }
-
-    offsetX = clientX - rect.left;
-    offsetY = clientY - rect.top;
-}
-
-function dragMove(e) {
-    if (!draggedPiece) return;
-    e.preventDefault();
-
-    let clientX = e.clientX, clientY = e.clientY;
-    if (e.touches) {
-        clientX = e.touches[0].clientX;
-        clientY = e.touches[0].clientY;
-    }
-
-    const rect = container.getBoundingClientRect();
-    let x = clientX - rect.left - offsetX;
-    let y = clientY - rect.top - offsetY;
-
-    // ограничиваем движение внутри контейнера
-    x = Math.max(0, Math.min(x, rect.width - pieceSize));
-    y = Math.max(0, Math.min(y, rect.height - pieceSize));
-
-    draggedPiece.style.left = x + 'px';
-    draggedPiece.style.top = y + 'px';
+    setTimeout(() => draggedPiece.style.visibility = 'hidden', 0);
 }
 
 function dragEnd(e) {
-    if (!draggedPiece) return;
-
+    draggedPiece.style.visibility = 'visible';
     const rect = container.getBoundingClientRect();
-    const x = parseInt(draggedPiece.style.left);
-    const y = parseInt(draggedPiece.style.top);
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
 
-    const row = Math.round(y / pieceSize);
-    const col = Math.round(x / pieceSize);
+    const row = Math.floor(y / pieceSize);
+    const col = Math.floor(x / pieceSize);
 
     if (row == draggedPiece.dataset.row && col == draggedPiece.dataset.col) {
         draggedPiece.style.left = col * pieceSize + 'px';
         draggedPiece.style.top = row * pieceSize + 'px';
-        draggedPiece.style.pointerEvents = 'none'; // фиксируем
+        draggedPiece.style.pointerEvents = 'none';  // фиксируем на месте
         checkCompletion();
     } else {
         draggedPiece.style.left = Math.random() * 150 + 'px';
         draggedPiece.style.top = Math.random() * 150 + 'px';
     }
-
-    draggedPiece = null;
 }
 
 function checkCompletion() {
