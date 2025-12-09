@@ -13,7 +13,7 @@ let selectedPiece = null;
 
 // Загружаем картинку пазла
 const img = new Image();
-img.src = "puzzle.jpg";
+img.src = "puzzle.jpg"; // Положи файл puzzle.jpg в корень
 
 img.onload = () => {
     initPuzzle();
@@ -31,8 +31,8 @@ function initPuzzle() {
                 x: Math.random() * (canvas.width - pieceSize),
                 y: Math.random() * (canvas.height - pieceSize),
                 index: pieces.length,
-                locked: false,   // добавили флаг "поставлен"
-                z: 0             // уровень слоя
+                locked: false,
+                z: 0
             });
         }
     }
@@ -41,11 +41,9 @@ function initPuzzle() {
 function drawPuzzle() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // сортируем по z-index
     pieces.sort((a, b) => a.z - b.z);
 
     pieces.forEach(p => {
-        ctx.globalAlpha = 1;
         ctx.drawImage(
             img,
             p.correctX, p.correctY, pieceSize, pieceSize,
@@ -63,7 +61,6 @@ canvas.addEventListener("mousedown", e => {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // выбираем кусок с самым высоким z-index
     let clicked = null;
     for (let i = pieces.length - 1; i >= 0; i--) {
         const p = pieces[i];
@@ -78,10 +75,7 @@ canvas.addEventListener("mousedown", e => {
 
     if (clicked && !clicked.locked) {
         selectedPiece = clicked;
-
-        // поднимаем наверх
         selectedPiece.z = Math.max(...pieces.map(p => p.z)) + 1;
-
         selectedPiece.offsetX = mx - selectedPiece.x;
         selectedPiece.offsetY = my - selectedPiece.y;
     }
@@ -105,16 +99,13 @@ canvas.addEventListener("mouseup", () => {
             Math.abs(selectedPiece.x - selectedPiece.correctX) < 20 &&
             Math.abs(selectedPiece.y - selectedPiece.correctY) < 20
         ) {
-            // фиксируем кусок
             selectedPiece.x = selectedPiece.correctX;
             selectedPiece.y = selectedPiece.correctY;
             selectedPiece.locked = true;
-            selectedPiece.z = -1;  // зафиксированные уходят вниз
+            selectedPiece.z = -1;
         }
 
         selectedPiece = null;
-
-        // проверяем — всё собрано?
         checkComplete();
     }
 });
@@ -122,8 +113,7 @@ canvas.addEventListener("mouseup", () => {
 function checkComplete() {
     if (pieces.every(p => p.locked)) {
         setTimeout(() => {
-            // ПЕРЕХОДИМ НА НОВУЮ РОМАНТИЧЕСКУЮ СТРАНИЦУ
             window.location.href = "romantic.html";
-        }, 500);
+        }, 600);
     }
 }
