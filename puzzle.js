@@ -1,130 +1,140 @@
-const container = document.getElementById('puzzle-container');
+const canvas = document.getElementById("puzzleCanvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = 600;
+canvas.height = 600;
+
 const rows = 3;
 const cols = 3;
-const pieceSize = 200 / 3; // размер части пазла
-const snapTolerance = 15; // допустимое расстояние для привязки
+const pieceSize = canvas.width / cols;
 
 let pieces = [];
+let selectedPiece = null;
 
-// создание частей пазла
-for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-        const piece = document.createElement('div');
-        piece.classList.add('puzzle-piece');
+// Загружаем картинку пазла
+const img = new Image();
+img.src = "heart.jpg"; // твоя картинка
+img.onload = () => {
+    initPuzzle();
+    drawPuzzle();
+};
 
-        piece.style.width = pieceSize + 'px';
-        piece.style.height = pieceSize + 'px';
-        piece.style.backgroundPosition = `-${c * pieceSize}px -${r * pieceSize}px`;
-        piece.style.transition = 'transform 0.2s ease';
-
-        piece.style.transform = `translate(${Math.random() * 120}px, ${Math.random() * 120}px)`;
-
-        piece.dataset.row = r;
-        piece.dataset.col = c;
-
-        container.appendChild(piece);
-        pieces.push(piece);
-
-        // pointer events для ПК и мобильных устройств
-        piece.addEventListener('pointerdown', pointerDown);
+// Инициализация пазла
+function initPuzzle() {
+    pieces = [];
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            pieces.push({
+                correctX: x * pieceSize,
+                correctY: y * pieceSize,
+                x: Math.random() * (canvas.width - pieceSize),
+                y: Math.random() * (canvas.height - pieceSize),
+                index: pieces.length,
+                locked: false,
+                z: 0
+            });
+        }
     }
 }
 
-let draggedPiece = null;
-let pointerOffsetX = 0;
-let pointerOffsetY = 0;
+// Рисуем пазл
+function drawPuzzle() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-// -------------------------
-// Pointer Handlers
-// -------------------------
-function pointerDown(e) {
-    e.preventDefault();
-    draggedPiece = e.currentTarget;
+    // сортируем по z (слой)
+    pieces.sort((a, b) => a.z - b.z);
 
-    // захватываем координаты указателя относительно кусочка
-    const rect = draggedPiece.getBoundingClientRect();
-    const transform = draggedPiece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    const currentX = parseFloat(transform[1]);
-    const currentY = parseFloat(transform[2]);
+    pieces.forEach(p => {
+        ctx.globalAlpha = 1;
+        ctx.drawImage(
+            img,
+            p.correctX, p.correctY, pieceSize, pieceSize,
+            p.x, p.y, pieceSize, pieceSize
+        );
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(p.x, p.y, pieceSize, pieceSize);
+    });
 
-    pointerOffsetX = e.clientX - rect.left;
-    pointerOffsetY = e.clientY - rect.top;
-
-    draggedPiece.dataset.startX = currentX;
-    draggedPiece.dataset.startY = currentY;
-
-    draggedPiece.setPointerCapture(e.pointerId);
-    draggedPiece.style.transition = 'none';
-
-    draggedPiece.addEventListener('pointermove', pointerMove);
-    draggedPiece.addEventListener('pointerup', pointerUp);
+    requestAnimationFrame(drawPuzzle);
 }
 
-function pointerMove(e) {
-    if (!draggedPiece) return;
-    e.preventDefault();
+// -------------------------
+// Pointer Events (ПК + мобильные)
+// -------------------------
+canvas.addEventListener("pointerdown", e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
-    const startX = parseFloat(draggedPiece.dataset.startX);
-    const startY = parseFloat(draggedPiece.dataset.startY);
-
-    const rect = container.getBoundingClientRect();
-    let newX = startX + (e.clientX - rect.left - pointerOffsetX);
-    let newY = startY + (e.clientY - rect.top - pointerOffsetY);
-
-    // ограничиваем движение по контейнеру
-    newX = Math.max(0, Math.min(newX, rect.width - pieceSize));
-    newY = Math.max(0, Math.min(newY, rect.height - pieceSize));
-
-    draggedPiece.style.transform = `translate(${newX}px, ${newY}px)`;
-}
-
-function pointerUp(e) {
-    if (!draggedPiece) return;
-
-    // вычисляем центр кусочка
-    const transform = draggedPiece.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    const x = parseFloat(transform[1]);
-    const y = parseFloat(transform[2]);
-
-    const targetX = draggedPiece.dataset.col * pieceSize;
-    const targetY = draggedPiece.dataset.row * pieceSize;
-
-    // проверяем расстояние для «магнита»
-    if (Math.abs(x - targetX) <= snapTolerance && Math.abs(y - targetY) <= snapTolerance) {
-        // плавное прибивание на место
-        draggedPiece.style.transition = 'transform 0.3s ease';
-        draggedPiece.style.transform = `translate(${targetX}px, ${targetY}px) scale(1.05)`;
-        setTimeout(() => {
-            draggedPiece.style.transform = `translate(${targetX}px, ${targetY}px) scale(1)`;
-        }, 150);
-
-        draggedPiece.style.pointerEvents = 'none';
+    let clicked = null;
+    for (let i = pieces.length - 1; i >= 0; i--) {
+        const p = pieces[i];
+        if (!p.locked &&
+            mx >= p.x && mx <= p.x + pieceSize &&
+            my >= p.y && my <= p.y + pieceSize
+        ) {
+            clicked = p;
+            break;
+        }
     }
 
-    draggedPiece.removeEventListener('pointermove', pointerMove);
-    draggedPiece.removeEventListener('pointerup', pointerUp);
-    draggedPiece.releasePointerCapture(e.pointerId);
-    draggedPiece = null;
+    if (clicked) {
+        selectedPiece = clicked;
+        selectedPiece.z = Math.max(...pieces.map(p => p.z)) + 1;
+        selectedPiece.offsetX = mx - selectedPiece.x;
+        selectedPiece.offsetY = my - selectedPiece.y;
+        canvas.setPointerCapture(e.pointerId);
+    }
+});
 
-    checkCompletion();
-}
+canvas.addEventListener("pointermove", e => {
+    if (!selectedPiece) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
 
-// -------------------------
+    selectedPiece.x = mx - selectedPiece.offsetX;
+    selectedPiece.y = my - selectedPiece.offsetY;
+
+    // ограничение движения
+    selectedPiece.x = Math.max(0, Math.min(selectedPiece.x, canvas.width - pieceSize));
+    selectedPiece.y = Math.max(0, Math.min(selectedPiece.y, canvas.height - pieceSize));
+});
+
+canvas.addEventListener("pointerup", e => {
+    if (!selectedPiece) return;
+
+    // проверка магнитного притяжения
+    if (
+        Math.abs(selectedPiece.x - selectedPiece.correctX) < 20 &&
+        Math.abs(selectedPiece.y - selectedPiece.correctY) < 20
+    ) {
+        selectedPiece.x = selectedPiece.correctX;
+        selectedPiece.y = selectedPiece.correctY;
+        selectedPiece.locked = true;
+        selectedPiece.z = -1; // фиксированные уходят вниз
+    }
+
+    selectedPiece = null;
+    checkComplete();
+});
+
 // Проверка завершения пазла
-// -------------------------
-function checkCompletion() {
-    if (pieces.every(p => p.style.pointerEvents === 'none')) {
+function checkComplete() {
+    if (pieces.every(p => p.locked)) {
         setTimeout(() => {
-            window.location.href = "message.html";
+            window.location.href = "message.html"; // переход на романтическую страницу
         }, 500);
     }
 }
 
 // -------------------------
-// Летающие сердечки
-// -------------------------
+// Летающие сердечки (анимация)
 function spawnHearts() {
     const container = document.getElementById('hearts');
+    if (!container) return;
+
     setInterval(() => {
         const heart = document.createElement('div');
         heart.classList.add('heart');
