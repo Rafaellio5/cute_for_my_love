@@ -1,87 +1,97 @@
-const puzzleContainer = document.getElementById('puzzle-container');
+const canvas = document.getElementById("puzzleCanvas");
+const ctx = canvas.getContext("2d");
 
-const size = puzzleContainer.offsetWidth;
-const grid = 3;
-const pieceSize = size / grid;
+canvas.width = 600;
+canvas.height = 600;
+
+const rows = 3;
+const cols = 3;
+const pieceSize = canvas.width / cols;
 
 let pieces = [];
-let placedCount = 0;
+let selectedPiece = null;
 
-for (let i = 0; i < grid * grid; i++) {
-  const piece = document.createElement('div');
-  piece.classList.add('puzzle-piece');
-  piece.style.width = pieceSize + 'px';
-  piece.style.height = pieceSize + 'px';
-  piece.style.left = Math.random() * (size - pieceSize) + 'px';
-  piece.style.top = Math.random() * (size - pieceSize) + 'px';
-  piece.style.backgroundImage = 'url("heart.jpg")';
-  piece.style.backgroundSize = `${size}px ${size}px`;
-  piece.style.backgroundPosition = `-${(i % grid) * pieceSize}px -${Math.floor(i / grid) * pieceSize}px`;
-  piece.setAttribute('data-id', i);
-  piece.setAttribute('data-placed', 'false');
-  piece.style.position = 'absolute';
-  piece.style.zIndex = 1;
+// Загружаем картинку пазла
+const img = new Image();
+img.src = "puzzle.jpg";
 
-  let offsetX, offsetY;
+img.onload = () => {
+    initPuzzle();
+    drawPuzzle();
+};
 
-  piece.addEventListener('mousedown', dragStart);
-  piece.addEventListener('touchstart', dragStart, {passive:false});
+function initPuzzle() {
+    pieces = [];
 
-  function dragStart(e) {
-    if (piece.getAttribute('data-placed') === 'true') return;
-    e.preventDefault();
-    piece.style.zIndex = 1000;
-
-    const rect = piece.getBoundingClientRect();
-    offsetX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    offsetY = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-
-    document.addEventListener('mousemove', dragMove);
-    document.addEventListener('mouseup', dragEnd);
-    document.addEventListener('touchmove', dragMove, {passive:false});
-    document.addEventListener('touchend', dragEnd);
-  }
-
-  function dragMove(e) {
-    if (piece.getAttribute('data-placed') === 'true') return;
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - offsetX - puzzleContainer.getBoundingClientRect().left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - offsetY - puzzleContainer.getBoundingClientRect().top;
-    piece.style.left = Math.min(Math.max(0, x), size - pieceSize) + 'px';
-    piece.style.top = Math.min(Math.max(0, y), size - pieceSize) + 'px';
-  }
-
-  function dragEnd() {
-    document.removeEventListener('mousemove', dragMove);
-    document.removeEventListener('mouseup', dragEnd);
-    document.removeEventListener('touchmove', dragMove);
-    document.removeEventListener('touchend', dragEnd);
-
-    const id = parseInt(piece.getAttribute('data-id'));
-    const correctX = (id % grid) * pieceSize;
-    const correctY = Math.floor(id / grid) * pieceSize;
-    const currentX = parseFloat(piece.style.left);
-    const currentY = parseFloat(piece.style.top);
-
-    if (Math.abs(currentX - correctX) < 20 && Math.abs(currentY - correctY) < 20) {
-      piece.style.left = correctX + 'px';
-      piece.style.top = correctY + 'px';
-      piece.setAttribute('data-placed', 'true');
-      piece.style.zIndex = 0;
-      placedCount++;
-
-      // поднимаем все остальные кусочки, которые ещё не поставлены
-      pieces.forEach(p => {
-        if (p.getAttribute('data-placed') === 'false') p.style.zIndex = 1;
-      });
-
-      if (placedCount === pieces.length) {
-        setTimeout(() => { window.location.href = 'infinity.html'; }, 500);
-      }
-    } else {
-      piece.style.zIndex = 1;
+    for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+            pieces.push({
+                correctX: x * pieceSize,
+                correctY: y * pieceSize,
+                x: Math.random() * (canvas.width - pieceSize),
+                y: Math.random() * (canvas.height - pieceSize),
+                index: pieces.length
+            });
+        }
     }
-  }
-
-  puzzleContainer.appendChild(piece);
-  pieces.push(piece);
 }
+
+function drawPuzzle() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    pieces.forEach(p => {
+        ctx.drawImage(
+            img,
+            p.correctX, p.correctY, pieceSize, pieceSize,
+            p.x, p.y, pieceSize, pieceSize
+        );
+        ctx.strokeStyle = "#000";
+        ctx.strokeRect(p.x, p.y, pieceSize, pieceSize);
+    });
+
+    requestAnimationFrame(drawPuzzle);
+}
+
+canvas.addEventListener("mousedown", e => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    selectedPiece = pieces.find(
+        p => mx >= p.x && mx <= p.x + pieceSize && my >= p.y && my <= p.y + pieceSize
+    );
+
+    if (selectedPiece) {
+        // Поднимаем выбранный кусок наверх
+        pieces = pieces.filter(p => p !== selectedPiece);
+        pieces.push(selectedPiece);
+
+        selectedPiece.offsetX = mx - selectedPiece.x;
+        selectedPiece.offsetY = my - selectedPiece.y;
+    }
+});
+
+canvas.addEventListener("mousemove", e => {
+    if (selectedPiece) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = e.clientX - rect.left;
+        const my = e.clientY - rect.top;
+
+        selectedPiece.x = mx - selectedPiece.offsetX;
+        selectedPiece.y = my - selectedPiece.offsetY;
+    }
+});
+
+canvas.addEventListener("mouseup", () => {
+    if (selectedPiece) {
+        if (
+            Math.abs(selectedPiece.x - selectedPiece.correctX) < 20 &&
+            Math.abs(selectedPiece.y - selectedPiece.correctY) < 20
+        ) {
+            selectedPiece.x = selectedPiece.correctX;
+            selectedPiece.y = selectedPiece.correctY;
+        }
+
+        selectedPiece = null;
+    }
+});
