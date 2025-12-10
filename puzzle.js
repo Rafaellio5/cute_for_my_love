@@ -1,20 +1,25 @@
 const canvas = document.getElementById("puzzleCanvas");
 const ctx = canvas.getContext("2d");
 
-const size = 100;
 const grid = 3;
+let pieceSize = 0;
 const pieces = [];
 let draggedPiece = null;
 let offsetX = 0;
 let offsetY = 0;
-let imageLoaded = false;
 let completed = 0;
 
 const img = new Image();
+img.crossOrigin = "anonymous";
 img.src = "heart.jpg";
 
 img.onload = () => {
-    imageLoaded = true;
+    // Canvas делаем размером под картинку
+    canvas.width = img.width;
+    canvas.height = img.height;
+
+    pieceSize = canvas.width / grid;
+
     initPuzzle();
     drawPuzzle();
 };
@@ -26,10 +31,10 @@ function initPuzzle() {
         for (let x = 0; x < grid; x++) {
             pieces.push({
                 id: id++,
-                correctX: x * size,
-                correctY: y * size,
-                x: Math.random() * 200,
-                y: Math.random() * 200,
+                correctX: x * pieceSize,
+                correctY: y * pieceSize,
+                x: Math.random() * (canvas.width - pieceSize),
+                y: Math.random() * (canvas.height - pieceSize),
                 fixed: false
             });
         }
@@ -42,22 +47,18 @@ function drawPuzzle() {
     pieces.forEach(p => {
         ctx.save();
         ctx.beginPath();
-        ctx.rect(p.x, p.y, size, size);
+        ctx.rect(p.x, p.y, pieceSize, pieceSize);
         ctx.clip();
+
         ctx.drawImage(
             img,
             p.correctX, p.correctY,
-            size, size,
+            pieceSize, pieceSize,
             p.x, p.y,
-            size, size
+            pieceSize, pieceSize
         );
-        ctx.restore();
 
-        if (!p.fixed) {
-            ctx.strokeStyle = "rgba(255,255,255,0.7)";
-            ctx.lineWidth = 2;
-            ctx.strokeRect(p.x, p.y, size, size);
-        }
+        ctx.restore();
     });
 
     requestAnimationFrame(drawPuzzle);
@@ -66,9 +67,13 @@ function drawPuzzle() {
 function getPieceAt(x, y) {
     for (let i = pieces.length - 1; i >= 0; i--) {
         const p = pieces[i];
-        if (!p.fixed &&
-            x >= p.x && x <= p.x + size &&
-            y >= p.y && y <= p.y + size) {
+        if (
+            !p.fixed &&
+            x >= p.x &&
+            x <= p.x + pieceSize &&
+            y >= p.y &&
+            y <= p.y + pieceSize
+        ) {
             return p;
         }
     }
@@ -86,7 +91,7 @@ function pointerDown(e) {
         offsetX = cx - p.x;
         offsetY = cy - p.y;
 
-        // на вершину
+        // ставим элемент на верхний слой
         pieces.splice(pieces.indexOf(p), 1);
         pieces.push(p);
     }
@@ -94,6 +99,7 @@ function pointerDown(e) {
 
 function pointerMove(e) {
     if (!draggedPiece) return;
+    e.preventDefault();
 
     const rect = canvas.getBoundingClientRect();
     const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
@@ -106,20 +112,21 @@ function pointerMove(e) {
 function pointerUp() {
     if (!draggedPiece) return;
 
-    // проверяем попадание
+    const snapDist = pieceSize * 0.3;
+
     const dist = Math.hypot(
         draggedPiece.x - draggedPiece.correctX,
         draggedPiece.y - draggedPiece.correctY
     );
 
-    if (dist < 35) {
+    if (dist < snapDist) {
         draggedPiece.x = draggedPiece.correctX;
         draggedPiece.y = draggedPiece.correctY;
         draggedPiece.fixed = true;
-        completed++;
 
-        if (completed === 9) {
-            setTimeout(showSecondScreen, 800);
+        completed++;
+        if (completed === grid * grid) {
+            setTimeout(showSecondScreen, 700);
         }
     }
 
@@ -130,27 +137,10 @@ canvas.addEventListener("mousedown", pointerDown);
 canvas.addEventListener("mousemove", pointerMove);
 canvas.addEventListener("mouseup", pointerUp);
 
-canvas.addEventListener("touchstart", pointerDown);
-canvas.addEventListener("touchmove", (e) => {
-    e.preventDefault();
-    pointerMove(e);
-}, { passive: false });
-canvas.addEventListener("touchend", pointerUp);
-
+canvas.addEventListener("touchstart", pointerDown, { passive: false });
+canvas.addEventListener("touchmove", pointerMove, { passive: false });
+canvas.addEventListener("touchend", pointerUp, { passive: false });
 
 function showSecondScreen() {
-    const screen = document.getElementById("secondScreen");
-    screen.classList.add("show");
-
-    // сердечки
-    setInterval(() => {
-        const h = document.createElement("div");
-        h.classList.add("heart");
-        h.innerHTML = "❤️";
-        h.style.left = Math.random() * 90 + "%";
-        h.style.animationDuration = 3 + Math.random() * 2 + "s";
-        document.body.appendChild(h);
-
-        setTimeout(() => h.remove(), 5000);
-    }, 400);
+    document.getElementById("secondScreen").classList.add("show");
 }
